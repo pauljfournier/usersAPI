@@ -1,0 +1,54 @@
+# Use root/example as user/password credentials
+version: '3.8'
+
+services:
+
+  go-api:
+    hostname: go-api
+    container_name: go-api
+    restart: unless-stopped
+    build: ./golang/
+    working_dir: /go/src/app
+    volumes:
+      - ./golang/app/src:/go/src/app
+    environment: 
+     - MONGODB_URI=mongodb://$MONGO_INITDB_ROOT_USERNAME:$MONGO_INITDB_ROOT_PASSWORD@mongo:27017
+     - PORT=8080
+     - TEST_PORT=8082
+    ports:
+      - 8080:8080
+    depends_on:
+      ["mongo"]
+    networks: ["faceit"]
+
+  mongo:
+    image: mongo
+    container_name: mongodb
+    restart: unless-stopped
+    ports:
+      - 27017:27017
+    environment:
+      PUID: 1000
+      PGID: 1000
+      MONGO_INITDB_ROOT_USERNAME: $MONGO_INITDB_ROOT_USERNAME 
+      MONGO_INITDB_ROOT_PASSWORD: $MONGO_INITDB_ROOT_PASSWORD
+    networks: ["faceit"]
+    
+  mongo-express:
+    image: mongo-express
+    container_name: mongodb_webui
+    restart: unless-stopped
+    volumes:
+      - ./data/db:/data/db
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: $MONGO_INITDB_ROOT_USERNAME
+      ME_CONFIG_MONGODB_ADMINPASSWORD: $MONGO_INITDB_ROOT_PASSWORD
+      ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
+    depends_on:
+      ["mongo"]
+    networks: ["faceit"]
+
+networks:
+  faceit:
